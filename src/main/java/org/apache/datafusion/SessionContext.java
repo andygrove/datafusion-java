@@ -54,7 +54,7 @@ public final class SessionContext implements AutoCloseable {
         try {
             executeQuery(nativeHandle, query, stream.memoryAddress());
             return Data.importArrayStream(allocator, stream);
-        } catch (RuntimeException e) {
+        } catch (Throwable e) {
             stream.close();
             throw e;
         }
