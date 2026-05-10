@@ -19,9 +19,10 @@
 
 package org.apache.datafusion;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class SessionContextTest {
     @Test
@@ -32,13 +33,14 @@ class SessionContextTest {
     }
 
     @Test
-    void registerAndQueryParquet(@TempDir Path tmp) throws Exception {
-        Path file = tmp.resolve("people.parquet");
-        ParquetTestHelper.writeTinyParquet(file);
+    void registerAndQueryLineitem() {
+        Path lineitem = Path.of("tpch-data/sf1/lineitem.parquet");
+        Assumptions.assumeTrue(Files.exists(lineitem),
+                "TPC-H SF1 data not found; run `make tpch-data` first");
 
         try (SessionContext ctx = new SessionContext()) {
-            ctx.registerParquet("people", file.toString());
-            ctx.sql("SELECT * FROM people");
+            ctx.registerParquet("lineitem", lineitem.toAbsolutePath().toString());
+            ctx.sql("SELECT COUNT(*) FROM lineitem");
         }
     }
 }
