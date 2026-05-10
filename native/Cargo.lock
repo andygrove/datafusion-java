@@ -277,6 +277,7 @@ version = "58.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18aa020f6bc8e5201dcd2d4b7f98c68f8a410ef37128263243e6ff2a47a67d4f"
 dependencies = [
+ "bitflags",
  "serde_core",
  "serde_json",
 ]
@@ -1137,6 +1138,7 @@ dependencies = [
 name = "datafusion-jni"
 version = "0.1.0"
 dependencies = [
+ "arrow",
  "datafusion",
  "jni",
  "tokio",

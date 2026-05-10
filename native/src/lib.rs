@@ -17,8 +17,11 @@
 
 mod errors;
 
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
+use datafusion::arrow::ffi_stream::FFI_ArrowArrayStream;
+use datafusion::arrow::datatypes::SchemaRef;
+use datafusion::arrow::record_batch::RecordBatchIterator;
 use datafusion::error::DataFusionError;
 use datafusion::prelude::{ParquetReadOptions, SessionContext};
 use jni::objects::{JClass, JString};
@@ -45,23 +48,34 @@ pub extern "system" fn Java_org_apache_datafusion_SessionContext_createSessionCo
 }
 
 #[no_mangle]
-pub extern "system" fn Java_org_apache_datafusion_SessionContext_executeSql<'local>(
+pub extern "system" fn Java_org_apache_datafusion_SessionContext_executeQuery<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     handle: jlong,
     sql: JString<'local>,
+    ffi_stream_addr: jlong,
 ) {
     try_unwrap_or_throw(&mut env, (), |env| -> JniResult<()> {
         if handle == 0 {
             return Err("SessionContext handle is null".into());
         }
+        if ffi_stream_addr == 0 {
+            return Err("ffi stream address is null".into());
+        }
         let ctx = unsafe { &*(handle as *const SessionContext) };
         let sql_str: String = env.get_string(&sql)?.into();
-        runtime().block_on(async {
+
+        let ffi: FFI_ArrowArrayStream = runtime().block_on(async {
             let df = ctx.sql(&sql_str).await?;
-            df.collect().await?;
-            Ok::<(), DataFusionError>(())
+            let schema: SchemaRef = Arc::new(df.schema().as_arrow().clone());
+            let batches = df.collect().await?;
+            let iter = RecordBatchIterator::new(batches.into_iter().map(Ok), schema);
+            Ok::<_, DataFusionError>(FFI_ArrowArrayStream::new(Box::new(iter)))
         })?;
+
+        unsafe {
+            std::ptr::write(ffi_stream_addr as *mut FFI_ArrowArrayStream, ffi);
+        }
         Ok(())
     })
 }
