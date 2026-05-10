@@ -57,7 +57,7 @@ datafusion-java-bindings/
 
 ### Dependencies
 
-- `datafusion` — latest release at implementation time (e.g. 50.x).
+- `datafusion` — latest release at implementation time (53.x as built).
 - `jni = "0.21"` — same major version Comet uses, but the upstream crate, not
   Comet's fork. Use the standard `JNIEnv` API (no `EnvUnowned`).
 - `tokio = { version = "1", features = ["rt-multi-thread"] }` — needed because
