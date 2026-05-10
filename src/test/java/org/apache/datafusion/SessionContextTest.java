@@ -19,28 +19,46 @@
 
 package org.apache.datafusion;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.ipc.ArrowReader;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 class SessionContextTest {
     @Test
-    void canExecuteSelect1() {
-        try (SessionContext ctx = new SessionContext()) {
-            ctx.sql("SELECT 1");
+    void canExecuteSelect1() throws Exception {
+        try (BufferAllocator allocator = new RootAllocator();
+             SessionContext ctx = new SessionContext();
+             ArrowReader reader = ctx.sql("SELECT 1", allocator)) {
+            assertTrue(reader.loadNextBatch());
+            assertEquals(1, reader.getVectorSchemaRoot().getRowCount());
         }
     }
 
     @Test
-    void registerAndQueryLineitem() {
+    void selectCountStarLineitem() throws Exception {
         Path lineitem = Path.of("tpch-data/sf1/lineitem.parquet");
         Assumptions.assumeTrue(Files.exists(lineitem),
                 "TPC-H SF1 data not found; run `make tpch-data` first");
 
-        try (SessionContext ctx = new SessionContext()) {
+        try (BufferAllocator allocator = new RootAllocator();
+             SessionContext ctx = new SessionContext()) {
             ctx.registerParquet("lineitem", lineitem.toAbsolutePath().toString());
-            ctx.sql("SELECT COUNT(*) FROM lineitem");
+            try (ArrowReader reader = ctx.sql("SELECT COUNT(*) FROM lineitem", allocator)) {
+                assertTrue(reader.loadNextBatch());
+                VectorSchemaRoot root = reader.getVectorSchemaRoot();
+                assertEquals(1, root.getRowCount());
+                BigIntVector count = (BigIntVector) root.getVector(0);
+                assertEquals(6_001_215L, count.get(0));
+            }
         }
     }
 }

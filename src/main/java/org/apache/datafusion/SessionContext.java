@@ -19,6 +19,11 @@
 
 package org.apache.datafusion;
 
+import org.apache.arrow.c.ArrowArrayStream;
+import org.apache.arrow.c.Data;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.ipc.ArrowReader;
+
 /**
  * A DataFusion session context.
  *
@@ -41,11 +46,18 @@ public final class SessionContext implements AutoCloseable {
         }
     }
 
-    public void sql(String query) {
+    public ArrowReader sql(String query, BufferAllocator allocator) {
         if (nativeHandle == 0) {
             throw new IllegalStateException("SessionContext is closed");
         }
-        executeSql(nativeHandle, query);
+        ArrowArrayStream stream = ArrowArrayStream.allocateNew(allocator);
+        try {
+            executeQuery(nativeHandle, query, stream.memoryAddress());
+            return Data.importArrayStream(allocator, stream);
+        } catch (RuntimeException e) {
+            stream.close();
+            throw e;
+        }
     }
 
     public void registerParquet(String name, String path) {
@@ -64,7 +76,7 @@ public final class SessionContext implements AutoCloseable {
     }
 
     private static native long createSessionContext();
-    private static native void executeSql(long handle, String sql);
+    private static native void executeQuery(long handle, String sql, long ffiStreamAddr);
     private static native void registerParquet(long handle, String name, String path);
     private static native void closeSessionContext(long handle);
 }
