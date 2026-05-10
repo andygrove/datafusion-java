@@ -20,7 +20,7 @@ mod errors;
 use std::sync::OnceLock;
 
 use datafusion::error::DataFusionError;
-use datafusion::prelude::SessionContext;
+use datafusion::prelude::{ParquetReadOptions, SessionContext};
 use jni::objects::{JClass, JString};
 use jni::sys::jlong;
 use jni::JNIEnv;
@@ -78,6 +78,30 @@ pub extern "system" fn Java_org_apache_datafusion_SessionContext_closeSessionCon
                 drop(Box::from_raw(handle as *mut SessionContext));
             }
         }
+        Ok(())
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_apache_datafusion_SessionContext_registerParquet<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    handle: jlong,
+    name: JString<'local>,
+    path: JString<'local>,
+) {
+    try_unwrap_or_throw(&mut env, (), |env| -> JniResult<()> {
+        if handle == 0 {
+            return Err("SessionContext handle is null".into());
+        }
+        let ctx = unsafe { &*(handle as *const SessionContext) };
+        let name: String = env.get_string(&name)?.into();
+        let path: String = env.get_string(&path)?.into();
+        runtime().block_on(async {
+            ctx.register_parquet(&name, &path, ParquetReadOptions::default())
+                .await?;
+            Ok::<(), datafusion::error::DataFusionError>(())
+        })?;
         Ok(())
     })
 }
