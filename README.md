@@ -21,11 +21,11 @@ This builds the native crate and runs the JUnit tests. Run the steps individuall
 
 ## Test data
 
-The Parquet integration test reads TPC-H SF1 data (~1GB across 8 tables). Generate it once with:
+The Parquet integration test reads TPC-H SF1 data (~345 MB across 8 tables in Snappy-compressed Parquet). Generate it once with:
 
     make tpch-data
 
-Tests that need this data skip cleanly if it's missing. `make clean` does NOT remove `tpch-data/` — delete it manually to reclaim the ~1GB.
+Tests that need this data skip cleanly if it's missing. `make clean` does NOT remove `tpch-data/` — delete it manually to reclaim the ~345 MB.
 
 ## Status
 
