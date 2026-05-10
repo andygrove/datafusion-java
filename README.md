@@ -31,5 +31,5 @@ Tests that need this data skip cleanly if it's missing. `make clean` does NOT re
 
 Currently exposes two Java entry points on `org.apache.datafusion.SessionContext`:
 
-- `sql(String)` — execute a SQL query through DataFusion. Does not return data yet.
+- `sql(String query, BufferAllocator allocator)` — execute a SQL query and return result batches as an `ArrowReader`. Caller closes the reader; the allocator must outlive it.
 - `registerParquet(String name, String path)` — register a local Parquet file as a SQL table named `name`.
