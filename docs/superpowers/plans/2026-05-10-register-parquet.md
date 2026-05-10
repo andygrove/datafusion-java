@@ -17,7 +17,7 @@
 | Path | Change |
 | --- | --- |
 | `pom.xml` | Add `parquet-hadoop` and `hadoop-common` test deps |
-| `src/test/java/org/apache/datafusion/TestParquet.java` | NEW — helper to write a tiny Parquet file |
+| `src/test/java/org/apache/datafusion/ParquetTestHelper.java` | NEW — helper to write a tiny Parquet file |
 | `src/test/java/org/apache/datafusion/SessionContextTest.java` | Add `registerAndQueryParquet` test |
 | `src/main/java/org/apache/datafusion/SessionContext.java` | Add `registerParquet(String, String)` + native declaration |
 | `native/src/lib.rs` | Add `Java_org_apache_datafusion_SessionContext_registerParquet` |
@@ -46,13 +46,13 @@ Project conventions reminder:
 
 ---
 
-## Task 1: Add Parquet test dependencies and `TestParquet` helper
+## Task 1: Add Parquet test dependencies and `ParquetTestHelper` helper
 
 Goal: bring in the libraries needed to write a Parquet file from a test, and ship a small helper that does exactly that. Helper is unused so far — Task 2 wires it into a real test.
 
 **Files:**
 - Modify: `pom.xml`
-- Create: `src/test/java/org/apache/datafusion/TestParquet.java`
+- Create: `src/test/java/org/apache/datafusion/ParquetTestHelper.java`
 
 - [ ] **Step 1: Add the two test-scope dependencies to `pom.xml`**
 
@@ -83,9 +83,9 @@ Open `pom.xml` and inside the existing `<dependencies>` block (right after the `
 
 Expected: exits 0 (artifacts download to `~/.m2/repository`). If you get "Could not resolve dependencies", the version numbers above may be wrong — check Maven Central for the latest 1.14.x of parquet-hadoop and 3.3.x of hadoop-common.
 
-- [ ] **Step 3: Create `TestParquet.java`**
+- [ ] **Step 3: Create `ParquetTestHelper.java`**
 
-Path: `src/test/java/org/apache/datafusion/TestParquet.java`. Full file:
+Path: `src/test/java/org/apache/datafusion/ParquetTestHelper.java`. Full file:
 
 ```java
 /*
@@ -120,12 +120,12 @@ import org.apache.parquet.hadoop.example.GroupWriteSupport;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
 
-final class TestParquet {
+final class ParquetTestHelper {
 
     private static final String SCHEMA_STR =
             "message People { required int32 id; required binary name (UTF8); }";
 
-    private TestParquet() {}
+    private ParquetTestHelper() {}
 
     /** Writes a 3-row Parquet file ({@code (id INT32, name UTF8)}) at {@code file}. */
     static void writeTinyParquet(java.nio.file.Path file) throws Exception {
@@ -161,13 +161,13 @@ Expected: `BUILD SUCCESS`. If compilation fails on `org.apache.parquet.*` import
 ./mvnw test
 ```
 
-Expected: `Tests run: 1, Failures: 0, Errors: 0` — only `canExecuteSelect1` runs. `TestParquet` is a helper class, not a test class (no `@Test` methods), so JUnit ignores it.
+Expected: `Tests run: 1, Failures: 0, Errors: 0` — only `canExecuteSelect1` runs. `ParquetTestHelper` is a helper class, not a test class (no `@Test` methods), so JUnit ignores it.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add pom.xml src/test/java/org/apache/datafusion/TestParquet.java
-git commit -m "test: add parquet-hadoop dep and TestParquet helper"
+git add pom.xml src/test/java/org/apache/datafusion/ParquetTestHelper.java
+git commit -m "test: add parquet-hadoop dep and ParquetTestHelper helper"
 ```
 
 ---
@@ -221,7 +221,7 @@ class SessionContextTest {
     @Test
     void registerAndQueryParquet(@TempDir Path tmp) throws Exception {
         Path file = tmp.resolve("people.parquet");
-        TestParquet.writeTinyParquet(file);
+        ParquetTestHelper.writeTinyParquet(file);
 
         try (SessionContext ctx = new SessionContext()) {
             ctx.registerParquet("people", file.toString());
@@ -316,7 +316,7 @@ Tests run: 2, Failures: 0, Errors: 1, Skipped: 0
 
 The error should be on `registerAndQueryParquet`, with a `java.lang.UnsatisfiedLinkError` for `org.apache.datafusion.SessionContext.registerParquet` — because the Rust JNI symbol doesn't exist yet. `canExecuteSelect1` should still pass.
 
-If the failure is anything OTHER than `UnsatisfiedLinkError` for `registerParquet` (e.g., the parquet writer threw, or the test is failing to find `TestParquet.writeTinyParquet`), stop and investigate.
+If the failure is anything OTHER than `UnsatisfiedLinkError` for `registerParquet` (e.g., the parquet writer threw, or the test is failing to find `ParquetTestHelper.writeTinyParquet`), stop and investigate.
 
 - [ ] **Step 6: Commit**
 
@@ -399,7 +399,7 @@ If you see a complaint about `ParquetReadOptions` not being found in `datafusion
 
 Expected: `Tests run: 2, Failures: 0, Errors: 0, Skipped: 0`. Both tests pass.
 
-If `registerAndQueryParquet` still fails with an `UnsatisfiedLinkError`, the cargo build didn't produce an updated `libdatafusion_jni.dylib` — re-run `cargo build`. If it fails with a `RuntimeException`, read the message — most commonly the SQL `SELECT * FROM people` failed because the table wasn't actually registered (check the Rust code) or the Parquet file path didn't exist (check `TestParquet`).
+If `registerAndQueryParquet` still fails with an `UnsatisfiedLinkError`, the cargo build didn't produce an updated `libdatafusion_jni.dylib` — re-run `cargo build`. If it fails with a `RuntimeException`, read the message — most commonly the SQL `SELECT * FROM people` failed because the table wasn't actually registered (check the Rust code) or the Parquet file path didn't exist (check `ParquetTestHelper`).
 
 - [ ] **Step 5: Run the full pipeline from a clean state**
 
@@ -423,7 +423,7 @@ git commit -m "feat: implement JNI bridge for SessionContext.registerParquet"
 - `make clean && make test` exits 0.
 - `./mvnw test` reports `Tests run: 2, Failures: 0, Errors: 0`.
 - Three new commits on `main`:
-  1. `test: add parquet-hadoop dep and TestParquet helper`
+  1. `test: add parquet-hadoop dep and ParquetTestHelper helper`
   2. `feat: add SessionContext.registerParquet Java API`
   3. `feat: implement JNI bridge for SessionContext.registerParquet`
 - All new source files have ASF license headers.
