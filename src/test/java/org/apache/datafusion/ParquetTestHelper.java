@@ -30,12 +30,12 @@ import org.apache.parquet.hadoop.example.GroupWriteSupport;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
 
-final class TestParquet {
+final class ParquetTestHelper {
 
     private static final String SCHEMA_STR =
             "message People { required int32 id; required binary name (UTF8); }";
 
-    private TestParquet() {}
+    private ParquetTestHelper() {}
 
     /** Writes a 3-row Parquet file ({@code (id INT32, name UTF8)}) at {@code file}. */
     static void writeTinyParquet(java.nio.file.Path file) throws Exception {
