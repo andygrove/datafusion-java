@@ -22,9 +22,10 @@ package org.apache.datafusion;
 /**
  * A DataFusion session context.
  *
- * <p>Instances are <strong>not thread-safe</strong>. Concurrent calls to {@link #sql} and
- * {@link #close} from different threads can produce a use-after-free on the native side.
- * Callers must externally synchronize, or confine each context to a single thread.
+ * <p>Instances are <strong>not thread-safe</strong>. Concurrent calls to any of
+ * {@link #sql}, {@link #registerParquet}, or {@link #close} from different threads can
+ * produce a use-after-free on the native side. Callers must externally synchronize, or
+ * confine each context to a single thread.
  */
 public final class SessionContext implements AutoCloseable {
     static {
