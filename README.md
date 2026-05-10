@@ -20,4 +20,7 @@ This builds the native crate and runs the JUnit tests. Run the steps individuall
 
 ## Status
 
-Currently exposes a single Java entry point: `org.apache.datafusion.SessionContext.sql(String)`. The method runs the query through DataFusion but does not return data yet.
+Currently exposes two Java entry points on `org.apache.datafusion.SessionContext`:
+
+- `sql(String)` — execute a SQL query through DataFusion. Does not return data yet.
+- `registerParquet(String name, String path)` — register a local Parquet file as a SQL table named `name`.
