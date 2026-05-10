@@ -9,9 +9,15 @@ public final class SessionContext implements AutoCloseable {
 
     public SessionContext() {
         this.nativeHandle = createSessionContext();
+        if (this.nativeHandle == 0) {
+            throw new RuntimeException("Failed to create native SessionContext");
+        }
     }
 
     public void sql(String query) {
+        if (nativeHandle == 0) {
+            throw new IllegalStateException("SessionContext is closed");
+        }
         executeSql(nativeHandle, query);
     }
 
