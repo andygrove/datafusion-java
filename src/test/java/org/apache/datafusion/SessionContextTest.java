@@ -19,13 +19,26 @@
 
 package org.apache.datafusion;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class SessionContextTest {
     @Test
     void canExecuteSelect1() {
         try (SessionContext ctx = new SessionContext()) {
             ctx.sql("SELECT 1");
+        }
+    }
+
+    @Test
+    void registerAndQueryParquet(@TempDir Path tmp) throws Exception {
+        Path file = tmp.resolve("people.parquet");
+        ParquetTestHelper.writeTinyParquet(file);
+
+        try (SessionContext ctx = new SessionContext()) {
+            ctx.registerParquet("people", file.toString());
+            ctx.sql("SELECT * FROM people");
         }
     }
 }

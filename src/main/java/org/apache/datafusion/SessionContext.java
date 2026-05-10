@@ -47,6 +47,13 @@ public final class SessionContext implements AutoCloseable {
         executeSql(nativeHandle, query);
     }
 
+    public void registerParquet(String name, String path) {
+        if (nativeHandle == 0) {
+            throw new IllegalStateException("SessionContext is closed");
+        }
+        registerParquet(nativeHandle, name, path);
+    }
+
     @Override
     public void close() {
         if (nativeHandle != 0) {
@@ -57,5 +64,6 @@ public final class SessionContext implements AutoCloseable {
 
     private static native long createSessionContext();
     private static native void executeSql(long handle, String sql);
+    private static native void registerParquet(long handle, String name, String path);
     private static native void closeSessionContext(long handle);
 }
