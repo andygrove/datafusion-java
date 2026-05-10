@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-.PHONY: all native jvm test clean
+.PHONY: all native jvm test clean tpch-data
 
 all: native jvm
 
@@ -31,3 +31,9 @@ test: native
 clean:
 	cd native && cargo clean
 	./mvnw clean
+
+tpch-data:
+	@command -v tpchgen-cli >/dev/null || \
+		(echo "Install: cargo install tpchgen-cli" && exit 1)
+	mkdir -p tpch-data/sf1
+	tpchgen-cli -s 1 -f parquet -o tpch-data/sf1
