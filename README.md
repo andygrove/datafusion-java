@@ -25,7 +25,7 @@ The Parquet integration test reads TPC-H SF1 data (~1GB across 8 tables). Genera
 
     make tpch-data
 
-Tests that need this data skip cleanly if it's missing.
+Tests that need this data skip cleanly if it's missing. `make clean` does NOT remove `tpch-data/` — delete it manually to reclaim the ~1GB.
 
 ## Status
 
