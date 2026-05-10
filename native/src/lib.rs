@@ -100,7 +100,7 @@ pub extern "system" fn Java_org_apache_datafusion_SessionContext_registerParquet
         runtime().block_on(async {
             ctx.register_parquet(&name, &path, ParquetReadOptions::default())
                 .await?;
-            Ok::<(), datafusion::error::DataFusionError>(())
+            Ok::<(), DataFusionError>(())
         })?;
         Ok(())
     })
