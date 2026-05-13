@@ -152,6 +152,17 @@ public final class DataFrame implements AutoCloseable {
     return new DataFrame(distinctRows(nativeHandle));
   }
 
+  /**
+   * Drop the named columns. The inverse of {@link #select(String...)}. The receiver remains usable
+   * and must still be closed independently.
+   */
+  public DataFrame dropColumns(String... columnNames) {
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("DataFrame is closed or already collected");
+    }
+    return new DataFrame(dropColumns(nativeHandle, columnNames));
+  }
+
   @Override
   public void close() {
     if (nativeHandle != 0) {
@@ -177,4 +188,6 @@ public final class DataFrame implements AutoCloseable {
   private static native long limitRows(long handle, int skip, int fetch);
 
   private static native long distinctRows(long handle);
+
+  private static native long dropColumns(long handle, String[] columnNames);
 }
