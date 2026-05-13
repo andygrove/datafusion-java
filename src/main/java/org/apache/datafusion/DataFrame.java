@@ -116,6 +116,31 @@ public final class DataFrame implements AutoCloseable {
     return new DataFrame(filterRows(nativeHandle, predicate));
   }
 
+  /**
+   * Take the first {@code fetch} rows. Equivalent to {@link #limit(int, int)} with {@code skip =
+   * 0}. The receiver remains usable and must still be closed independently.
+   */
+  public DataFrame limit(int fetch) {
+    return limit(0, fetch);
+  }
+
+  /**
+   * Skip {@code skip} rows, then take the next {@code fetch} rows. Both arguments must be
+   * non-negative. The receiver remains usable and must still be closed independently.
+   */
+  public DataFrame limit(int skip, int fetch) {
+    if (skip < 0) {
+      throw new IllegalArgumentException("skip must be non-negative, was " + skip);
+    }
+    if (fetch < 0) {
+      throw new IllegalArgumentException("fetch must be non-negative, was " + fetch);
+    }
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("DataFrame is closed or already collected");
+    }
+    return new DataFrame(limitRows(nativeHandle, skip, fetch));
+  }
+
   @Override
   public void close() {
     if (nativeHandle != 0) {
@@ -137,4 +162,6 @@ public final class DataFrame implements AutoCloseable {
   private static native long selectColumns(long handle, String[] columnNames);
 
   private static native long filterRows(long handle, String predicate);
+
+  private static native long limitRows(long handle, int skip, int fetch);
 }
