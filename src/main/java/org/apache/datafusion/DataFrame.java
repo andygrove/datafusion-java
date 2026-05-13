@@ -163,6 +163,14 @@ public final class DataFrame implements AutoCloseable {
     return new DataFrame(dropColumns(nativeHandle, columnNames));
   }
 
+  /** Rename a column. The receiver remains usable and must still be closed independently. */
+  public DataFrame withColumnRenamed(String oldName, String newName) {
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("DataFrame is closed or already collected");
+    }
+    return new DataFrame(renameColumn(nativeHandle, oldName, newName));
+  }
+
   @Override
   public void close() {
     if (nativeHandle != 0) {
@@ -190,4 +198,6 @@ public final class DataFrame implements AutoCloseable {
   private static native long distinctRows(long handle);
 
   private static native long dropColumns(long handle, String[] columnNames);
+
+  private static native long renameColumn(long handle, String oldName, String newName);
 }
