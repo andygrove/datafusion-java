@@ -141,6 +141,17 @@ public final class DataFrame implements AutoCloseable {
     return new DataFrame(limitRows(nativeHandle, skip, fetch));
   }
 
+  /**
+   * Deduplicate rows across all columns. The receiver remains usable and must still be closed
+   * independently.
+   */
+  public DataFrame distinct() {
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("DataFrame is closed or already collected");
+    }
+    return new DataFrame(distinctRows(nativeHandle));
+  }
+
   @Override
   public void close() {
     if (nativeHandle != 0) {
@@ -164,4 +175,6 @@ public final class DataFrame implements AutoCloseable {
   private static native long filterRows(long handle, String predicate);
 
   private static native long limitRows(long handle, int skip, int fetch);
+
+  private static native long distinctRows(long handle);
 }
