@@ -1139,8 +1139,10 @@ name = "datafusion-jni"
 version = "0.1.0"
 dependencies = [
  "arrow",
+ "async-trait",
  "datafusion",
  "datafusion-proto",
+ "futures",
  "jni",
  "prost",
  "prost-build",
