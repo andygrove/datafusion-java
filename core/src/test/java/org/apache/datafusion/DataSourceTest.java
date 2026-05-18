@@ -229,4 +229,49 @@ class DataSourceTest {
       }
     }
   }
+
+  /** Declares (id INT) but scan() returns (id INT, extra UTF8). */
+  static final class SchemaLyingDataSource implements DataSource {
+    @Override
+    public Schema schema() {
+      return new Schema(List.of(new Field("id", FieldType.nullable(INT32), null)));
+    }
+
+    @Override
+    public ArrowReader scan(BufferAllocator allocator) {
+      Schema actualSchema =
+          new Schema(
+              List.of(
+                  new Field("id", FieldType.nullable(INT32), null),
+                  new Field("extra", FieldType.nullable(UTF8), null)));
+      try (BufferAllocator tmp = new RootAllocator();
+          VectorSchemaRoot root = VectorSchemaRoot.create(actualSchema, tmp)) {
+        root.setRowCount(0);
+        byte[] ipc = InMemoryDataSource.serializeBatches(actualSchema, List.of(root));
+        return new ArrowStreamReader(new ByteArrayInputStream(ipc), allocator);
+      }
+    }
+  }
+
+  @Test
+  void registerDataSource_schemaMismatch_failsQueryWithReadableError() {
+    try (BufferAllocator allocator = new RootAllocator();
+        SessionContext ctx = new SessionContext()) {
+      ctx.registerDataSource("t", new SchemaLyingDataSource());
+
+      RuntimeException ex =
+          org.junit.jupiter.api.Assertions.assertThrows(
+              RuntimeException.class,
+              () -> {
+                try (DataFrame df = ctx.sql("SELECT id FROM t");
+                    ArrowReader r = df.collect(allocator)) {
+                  while (r.loadNextBatch()) {}
+                }
+              });
+      String msg = ex.getMessage();
+      assertTrue(
+          msg.contains("registered schema") || msg.contains("returned schema"),
+          "expected schema-mismatch wording, got: " + msg);
+    }
+  }
 }
