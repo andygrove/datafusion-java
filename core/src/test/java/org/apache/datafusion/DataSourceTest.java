@@ -206,4 +206,27 @@ class DataSourceTest {
       }
     }
   }
+
+  @Test
+  void registerDataSource_projectSingleColumn_returnsOnlyThatColumn() throws Exception {
+    try (BufferAllocator allocator = new RootAllocator();
+        SessionContext ctx = new SessionContext()) {
+      InMemoryDataSource src =
+          buildTwoColumnTable(new int[] {10, 20, 30}, new String[] {"x", "y", "z"});
+      ctx.registerDataSource("t", src);
+
+      try (DataFrame df = ctx.sql("SELECT name FROM t ORDER BY name");
+          ArrowReader r = df.collect(allocator)) {
+        assertTrue(r.loadNextBatch());
+        VectorSchemaRoot out = r.getVectorSchemaRoot();
+        assertEquals(1, out.getSchema().getFields().size());
+        VarCharVector name = (VarCharVector) out.getVector("name");
+        assertEquals(3, name.getValueCount());
+        assertEquals("x", new String(name.get(0)));
+        assertEquals("y", new String(name.get(1)));
+        assertEquals("z", new String(name.get(2)));
+        while (r.loadNextBatch()) {}
+      }
+    }
+  }
 }
