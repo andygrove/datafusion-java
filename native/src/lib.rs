@@ -18,6 +18,7 @@
 mod arrow;
 mod csv;
 mod errors;
+mod jni_util;
 mod json;
 mod proto;
 mod schema;
