@@ -186,4 +186,24 @@ class DataSourceTest {
       assertEquals(2, src.scanCount());
     }
   }
+
+  @Test
+  void registerDataSource_emptyStream_yieldsNoRows() throws Exception {
+    try (BufferAllocator allocator = new RootAllocator();
+        SessionContext ctx = new SessionContext()) {
+      Schema schema = new Schema(List.of(new Field("id", FieldType.nullable(INT32), null)));
+      InMemoryDataSource src = InMemoryDataSource.fromBatches(schema, List.of());
+      ctx.registerDataSource("t", src);
+
+      try (DataFrame df = ctx.sql("SELECT id FROM t");
+          ArrowReader r = df.collect(allocator)) {
+        long total = 0;
+        while (r.loadNextBatch()) {
+          IntVector id = (IntVector) r.getVectorSchemaRoot().getVector("id");
+          total += id.getValueCount();
+        }
+        assertEquals(0, total);
+      }
+    }
+  }
 }
